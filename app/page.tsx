@@ -11,10 +11,8 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-8">
       <div className="max-w-[1400px] mx-auto px-4">
         <OrgChartProvider>
-          <div className="relative min-h-[600px] bg-white/80 backdrop-blur-sm rounded-lg p-8 shadow-xl">
             <OrgChart />
             <EmployeeForm />
-          </div>
         </OrgChartProvider>
       </div>
     </div>
