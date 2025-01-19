@@ -53,20 +53,45 @@ function findEmployeeById(root: Employee, id: string): Employee | null {
 }
 
 function addEmployee(root: Employee, parentId: string, newEmployee: Employee): Employee {
+  // Validate input parameters
+  if (!root) {
+    throw new Error('Root employee cannot be null or undefined');
+  }
+
+  if (!parentId) {
+    throw new Error('Parent ID must be provided');
+  }
+
+  if (!newEmployee) {
+    throw new Error('New employee cannot be null or undefined');
+  }
+
+  // If current node is the parent, add the new employee to its children
   if (root.id === parentId) {
     return {
       ...root,
-      children: [...(root.children || []), newEmployee],
+      children: [
+        ...(root.children ?? []), 
+        { 
+          ...newEmployee, 
+          // Ensure the new employee has a unique identifier
+          id: newEmployee.id || crypto.randomUUID() 
+        }
+      ],
     };
   }
 
-  if (root.children) {
+  // Recursively search and add employee in the children
+  if (root.children && root.children.length > 0) {
     return {
       ...root,
-      children: root.children.map(child => addEmployee(child, parentId, newEmployee)),
+      children: root.children.map(child => 
+        addEmployee(child, parentId, newEmployee)
+      ),
     };
   }
 
+  // If no matching parent found, return the original root
   return root;
 }
 
