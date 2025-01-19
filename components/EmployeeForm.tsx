@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Employee, useOrgChart } from '../context/OrgChartContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Trash2, User, Briefcase } from 'lucide-react';
@@ -120,10 +120,23 @@ export function EmployeeForm() {
   const { state, dispatch } = useOrgChart();
   const [formState, setFormState] = useState({
     name: state.selectedEmployee?.name || '',
+    jobTitle: state.selectedEmployee?.jobTitle || '',
+    hobby: state.selectedEmployee?.hobby || '',
   });
   const [errors, setErrors] = useState({ name: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
+
+  useEffect(() => {
+    // Reset form when an employee is selected or form is opened for editing
+    if (state.selectedEmployee && !state.isAddingEmployee) {
+      setFormState({
+        name: state.selectedEmployee.name || '',
+        jobTitle: state.selectedEmployee.jobTitle || '',
+        hobby: state.selectedEmployee.hobby || '',
+      });
+    }
+  }, [state.selectedEmployee, state.isAddingEmployee]);
 
   const validate = useCallback(() => {
     const newErrors = { 
@@ -142,6 +155,8 @@ export function EmployeeForm() {
       const employeeData = {
         id: state.selectedEmployee?.id || Date.now().toString(),
         name: formState.name.trim(),
+        jobTitle: formState.jobTitle.trim() || undefined,
+        hobby: formState.hobby.trim() || undefined,
       };
 
       if (state.isAddingEmployee && state.parentForNewEmployee) {
@@ -178,7 +193,7 @@ export function EmployeeForm() {
   }, [state, dispatch]);
 
   const handleClose = useCallback(() => {
-    setFormState({ name: '' });
+    setFormState({ name: '', jobTitle: '', hobby: '' });
     setErrors({ name: '' });
     setIsDeleteConfirming(false);
     dispatch({ type: 'CLOSE_ADD_EMPLOYEE_FORM' });
@@ -226,6 +241,21 @@ export function EmployeeForm() {
             error={errors.name}
             placeholder="Enter employee name"
             icon={User}
+          />
+          <FormInput
+            label="Job Title"
+            id="jobTitle"
+            value={formState.jobTitle}
+            onChange={(value) => setFormState(prev => ({ ...prev, jobTitle: value }))}
+            placeholder="Enter employee job title"
+            icon={Briefcase}
+          />
+          <FormInput
+            label="Hobby"
+            id="hobby"
+            value={formState.hobby}
+            onChange={(value) => setFormState(prev => ({ ...prev, hobby: value }))}
+            placeholder="Enter employee hobby"
           />
           
           <div className="flex justify-between items-center pt-4">

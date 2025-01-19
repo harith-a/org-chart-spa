@@ -6,6 +6,8 @@ import Cookies from 'js-cookie';
 export interface Employee {
   id: string;
   name: string;
+  jobTitle?: string;
+  hobby?: string;
   children?: Employee[];
 }
 

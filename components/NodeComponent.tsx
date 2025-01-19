@@ -62,7 +62,16 @@ export function NodeComponent({ node }: NodeComponentProps) {
               <h3 className="text-lg font-bold text-slate-900 truncate transition-colors duration-200 group-hover:text-blue-700">
                 {node.name}
               </h3>
-              {/* Title removed */}
+              {node.jobTitle && (
+                <p className="text-sm text-slate-600 truncate opacity-80 group-hover:opacity-100 transition-opacity duration-200">
+                  🏢 {node.jobTitle}
+                </p>
+              )}
+              {node.hobby && (
+                <p className="text-xs text-slate-500 truncate italic opacity-70 group-hover:opacity-90 transition-opacity duration-200">
+                  ⭐ {node.hobby}
+                </p>
+              )}
             </div>
           </div>
         </div>
