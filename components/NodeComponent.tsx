@@ -2,59 +2,57 @@
 
 import React from 'react';
 import { Employee, useOrgChart } from '../context/OrgChartContext';
-import { PlusCircle, Edit2, UserPlus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface NodeComponentProps {
   node: Employee;
 }
 
 export function NodeComponent({ node }: NodeComponentProps) {
-  const { dispatch } = useOrgChart();
+  const { state, dispatch } = useOrgChart();
 
-  const handleSelect = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleClick = () => {
     dispatch({ type: 'SELECT_EMPLOYEE', payload: node });
   };
 
-  const handleAddChild = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    dispatch({ type: 'SELECT_EMPLOYEE', payload: null });
-    const newEmployee: Employee = {
-      id: Date.now().toString(),
-      name: '',
-      title: '',
-    };
-    dispatch({
-      type: 'ADD_EMPLOYEE',
-      payload: { parentId: node.id, newEmployee },
+  const handleAddClick = () => {
+    dispatch({ 
+      type: 'OPEN_ADD_EMPLOYEE_FORM', 
+      payload: { parent: node } 
     });
   };
 
   return (
     <div
-      className="group relative p-4 bg-white border border-gray-200 rounded-lg shadow-md transition-all duration-200 ease-in-out hover:shadow-lg hover:scale-105"
-      onClick={handleSelect}
+      onClick={handleClick}
+      className="min-w-[200px] bg-white rounded-lg shadow-md cursor-pointer transition-shadow hover:shadow-lg border border-slate-200 relative group"
     >
-      <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
-        <button
-          onClick={handleAddChild}
-          className="p-1 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
-          title="Add subordinate"
-        >
-          <UserPlus size={14} />
-        </button>
-        <button
-          onClick={handleSelect}
-          className="p-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
-          title="Edit"
-        >
-          <Edit2 size={14} />
-        </button>
+      <div className="flex items-center gap-3 p-3">
+        <div className="flex-shrink-0">
+          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <span className="text-blue-600 font-bold text-lg">
+              {node.name.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-medium text-slate-900 truncate">
+            {node.name}
+          </h3>
+          <p className="text-xs text-slate-500 truncate">{node.title}</p>
+        </div>
       </div>
-      <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-800">{node.name || 'New Employee'}</h3>
-        <p className="text-sm text-gray-600">{node.title || 'Click to edit'}</p>
-      </div>
+      
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          handleAddClick();
+        }}
+        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-green-500 hover:text-green-600 focus:outline-none"
+        title="Add Employee"
+      >
+        <Plus size={16} />
+      </button>
     </div>
   );
 }

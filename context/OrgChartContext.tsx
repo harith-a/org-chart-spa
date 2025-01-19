@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, ReactNode, useCallback, useEffect } from 'react';
-import { saveOrgChartToFile } from '../lib/saveOrgChart';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import Cookies from 'js-cookie';
 
 export interface Employee {
   id: string;
@@ -13,13 +13,19 @@ export interface Employee {
 interface OrgChartState {
   data: Employee;
   selectedEmployee: Employee | null;
+  parentForNewEmployee: Employee | null;
+  isAddingEmployee: boolean;
 }
 
 type Action =
   | { type: 'ADD_EMPLOYEE'; payload: { parentId: string; newEmployee: Employee } }
   | { type: 'EDIT_EMPLOYEE'; payload: Employee }
+  | { type: 'DELETE_EMPLOYEE'; payload: { employeeId: string } }
   | { type: 'SELECT_EMPLOYEE'; payload: Employee | null }
-  | { type: 'SAVE_ORG_CHART' };
+  | { type: 'SET_PARENT_FOR_NEW_EMPLOYEE'; payload: Employee }
+  | { type: 'OPEN_ADD_EMPLOYEE_FORM'; payload: { parent: Employee } }
+  | { type: 'CLOSE_ADD_EMPLOYEE_FORM' }
+  | { type: 'LOAD_FROM_COOKIE'; payload: Employee };
 
 const initialState: OrgChartState = {
   data: {
@@ -29,39 +35,21 @@ const initialState: OrgChartState = {
     children: [],
   },
   selectedEmployee: null,
+  parentForNewEmployee: null,
+  isAddingEmployee: false,
 };
 
-function orgChartReducer(state: OrgChartState, action: Action): OrgChartState {
-  let newState;
-  switch (action.type) {
-    case 'ADD_EMPLOYEE':
-      newState = {
-        ...state,
-        data: addEmployee(state.data, action.payload.parentId, action.payload.newEmployee),
-      };
-      saveOrgChartToFile(newState.data).catch(console.error);
-      return newState;
-    case 'EDIT_EMPLOYEE':
-      newState = {
-        ...state,
-        data: editEmployee(state.data, action.payload),
-      };
-      saveOrgChartToFile(newState.data).catch(console.error);
-      return newState;
-    case 'SELECT_EMPLOYEE':
-      newState = {
-        ...state,
-        selectedEmployee: action.payload,
-      };
-      // Don't save on selection change
-      return newState;
-    case 'SAVE_ORG_CHART':
-      // Trigger save asynchronously without blocking state update
-      saveOrgChartToFile(state.data).catch(console.error);
-      return state;
-    default:
-      return state;
+function findEmployeeById(root: Employee, id: string): Employee | null {
+  if (root.id === id) return root;
+  
+  if (root.children) {
+    for (const child of root.children) {
+      const found = findEmployeeById(child, id);
+      if (found) return found;
+    }
   }
+  
+  return null;
 }
 
 function addEmployee(root: Employee, parentId: string, newEmployee: Employee): Employee {
@@ -97,21 +85,122 @@ function editEmployee(root: Employee, updatedEmployee: Employee): Employee {
   return root;
 }
 
+function deleteEmployee(root: Employee, employeeId: string): Employee {
+  if (!root.children) return root;
+
+  // Remove the employee if found in direct children
+  const updatedChildren = root.children.filter(child => child.id !== employeeId);
+
+  // If not found in direct children, recursively search
+  if (updatedChildren.length === root.children.length) {
+    return {
+      ...root,
+      children: root.children.map(child => deleteEmployee(child, employeeId)),
+    };
+  }
+
+  return {
+    ...root,
+    children: updatedChildren,
+  };
+}
+
+function orgChartReducer(state: OrgChartState, action: Action): OrgChartState {
+  switch (action.type) {
+    case 'ADD_EMPLOYEE':
+      const newStateAdd = {
+        ...state,
+        data: addEmployee(state.data, action.payload.parentId, action.payload.newEmployee),
+        selectedEmployee: null,
+        parentForNewEmployee: null,
+        isAddingEmployee: false,
+      };
+      Cookies.set('orgChartData', JSON.stringify(newStateAdd.data), { expires: 365 });
+      return newStateAdd;
+    case 'EDIT_EMPLOYEE':
+      const newStateEdit = {
+        ...state,
+        data: editEmployee(state.data, action.payload),
+        selectedEmployee: null,
+      };
+      Cookies.set('orgChartData', JSON.stringify(newStateEdit.data), { expires: 365 });
+      return newStateEdit;
+    case 'DELETE_EMPLOYEE':
+      const newStateDelete = {
+        ...state,
+        data: deleteEmployee(state.data, action.payload.employeeId),
+        selectedEmployee: null,
+        parentForNewEmployee: null,
+        isAddingEmployee: false,
+      };
+      Cookies.set('orgChartData', JSON.stringify(newStateDelete.data), { expires: 365 });
+      return newStateDelete;
+    case 'SELECT_EMPLOYEE':
+      return {
+        ...state,
+        selectedEmployee: action.payload,
+        isAddingEmployee: false,
+      };
+    case 'SET_PARENT_FOR_NEW_EMPLOYEE':
+      return {
+        ...state,
+        parentForNewEmployee: action.payload,
+        isAddingEmployee: true,
+      };
+    case 'OPEN_ADD_EMPLOYEE_FORM':
+      return {
+        ...state,
+        parentForNewEmployee: action.payload.parent,
+        selectedEmployee: null,
+        isAddingEmployee: true,
+      };
+    case 'CLOSE_ADD_EMPLOYEE_FORM':
+      return {
+        ...state,
+        selectedEmployee: null,
+        parentForNewEmployee: null,
+        isAddingEmployee: false,
+      };
+    case 'LOAD_FROM_COOKIE':
+      return {
+        ...state,
+        data: action.payload,
+      };
+    default:
+      return state;
+  }
+}
+
 const OrgChartContext = createContext<{
   state: OrgChartState;
   dispatch: React.Dispatch<Action>;
+  findEmployeeById: (id: string) => Employee | null;
 } | undefined>(undefined);
 
 export function OrgChartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(orgChartReducer, initialState);
 
-  // Optional: Initial save when provider mounts
   useEffect(() => {
-    saveOrgChartToFile(state.data).catch(console.error);
+    // Load from cookie on initial render
+    const savedData = Cookies.get('orgChartData');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        dispatch({ type: 'LOAD_FROM_COOKIE', payload: parsedData });
+      } catch (error) {
+        console.error('Error parsing saved org chart data:', error);
+      }
+    }
   }, []);
 
+  const contextValue = {
+    state, 
+    dispatch,
+    findEmployeeById: (id: string) => findEmployeeById(state.data, id),
+  };
+
   return (
-    <OrgChartContext.Provider value={{ state, dispatch }}>
+    <OrgChartContext.Provider value={contextValue}>
       {children}
     </OrgChartContext.Provider>
   );
