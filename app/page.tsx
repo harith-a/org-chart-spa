@@ -8,13 +8,11 @@ import "./globals.css";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-8">
-      <div className="max-w-[1400px] mx-auto px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200">
         <OrgChartProvider>
             <OrgChart />
             <EmployeeForm />
         </OrgChartProvider>
-      </div>
     </div>
   );
 }
