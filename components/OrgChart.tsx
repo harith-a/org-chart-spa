@@ -104,7 +104,6 @@ export function OrgChart() {
         panning={{ disabled: false }}
         pinch={{ disabled: false }}
         limitToBounds={false}
-        centerZoomedOut={true}
       >
         {() => (
           <>
