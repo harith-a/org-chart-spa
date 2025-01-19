@@ -6,7 +6,6 @@ import Cookies from 'js-cookie';
 export interface Employee {
   id: string;
   name: string;
-  title: string;
   children?: Employee[];
 }
 
@@ -31,7 +30,6 @@ const initialState: OrgChartState = {
   data: {
     id: '1',
     name: 'John Doe',
-    title: 'CEO',
     children: [],
   },
   selectedEmployee: null,

@@ -120,19 +120,17 @@ export function EmployeeForm() {
   const { state, dispatch } = useOrgChart();
   const [formState, setFormState] = useState({
     name: state.selectedEmployee?.name || '',
-    title: state.selectedEmployee?.title || '',
   });
-  const [errors, setErrors] = useState({ name: '', title: '' });
+  const [errors, setErrors] = useState({ name: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
 
   const validate = useCallback(() => {
     const newErrors = { 
       name: formState.name.trim() ? '' : 'Name is required',
-      title: formState.title.trim() ? '' : 'Title is required'
     };
     setErrors(newErrors);
-    return !newErrors.name && !newErrors.title;
+    return !newErrors.name;
   }, [formState]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
@@ -144,7 +142,6 @@ export function EmployeeForm() {
       const employeeData = {
         id: state.selectedEmployee?.id || Date.now().toString(),
         name: formState.name.trim(),
-        title: formState.title.trim(),
       };
 
       if (state.isAddingEmployee && state.parentForNewEmployee) {
@@ -181,8 +178,8 @@ export function EmployeeForm() {
   }, [state, dispatch]);
 
   const handleClose = useCallback(() => {
-    setFormState({ name: '', title: '' });
-    setErrors({ name: '', title: '' });
+    setFormState({ name: '' });
+    setErrors({ name: '' });
     setIsDeleteConfirming(false);
     dispatch({ type: 'CLOSE_ADD_EMPLOYEE_FORM' });
   }, [dispatch]);
@@ -229,16 +226,6 @@ export function EmployeeForm() {
             error={errors.name}
             placeholder="Enter employee name"
             icon={User}
-          />
-          
-          <FormInput
-            label="Title"
-            id="title"
-            value={formState.title}
-            onChange={(value) => setFormState(prev => ({ ...prev, title: value }))}
-            error={errors.title}
-            placeholder="Enter job title"
-            icon={Briefcase}
           />
           
           <div className="flex justify-between items-center pt-4">
